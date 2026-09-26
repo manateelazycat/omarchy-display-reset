@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "andy.display-reset",
+  "name": "Display Reset",
+  "version": "1.0.0",
+  "author": "Andy",
+  "license": "GPL-3.0-only",
+  "description": "Select connected displays and temporarily disable and restore them through the hyprmoncfg monitor configuration.",
+  "kinds": ["service", "bar-widget"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Display Reset",
+    "description": "Reload selected displays on every screen.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
