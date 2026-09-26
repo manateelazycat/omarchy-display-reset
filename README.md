@@ -2,8 +2,6 @@
 
 ![Display Reset 四屏预览](preview.png)
 
-[预览图片来源：作者的 X 帖文](https://x.com/manateelazycat/status/2103833701478207667)
-
 Omarchy Shell 插件。任务栏右侧图标打开时，会在所有显示器显示相同的选择对话框。对话框根据 `hyprctl monitors -j` 的当前坐标和旋转排列显示器；在任一屏幕上勾选后，选择会同步到所有对话框。
 
 点击 **Reload** 后，插件停止 `hyprmoncfgd.service`，备份 `~/.config/hypr/hyprmoncfg-monitors.lua`，仅为所选输出临时写入 `disabled = true`，执行 `hyprctl reload`，等待两秒，恢复原配置并再次加载，最后启动服务并检查 `hyprctl configerrors`。执行失败时也会尝试恢复配置和服务。
