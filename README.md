@@ -8,7 +8,19 @@ This Omarchy Shell plugin adds an icon to the right side of the bar. Clicking it
 
 After you click **Reload**, the plugin stops `hyprmoncfgd.service`, backs up `~/.config/hypr/hyprmoncfg-monitors.lua`, and temporarily adds `disabled = true` only to the selected outputs. It runs `hyprctl reload`, waits two seconds, restores the original configuration, reloads again, starts the service, and checks `hyprctl configerrors`. It also attempts to restore the configuration and service if an operation fails.
 
+## Requirements
+
+Omarchy Shell and Hyprland are required. The reload action also needs Python 3, `hyprctl`, `systemctl --user`, a running `hyprmoncfgd.service`, and the generated `~/.config/hypr/hyprmoncfg-monitors.lua` file. The local installer additionally uses `jq`.
+
 ## Install
+
+From the Omarchy plugin manager:
+
+```bash
+omarchy plugin add https://github.com/manateelazycat/omarchy-display-reset.git --enable --yes
+```
+
+Or, from a local checkout:
 
 ```bash
 ./install.sh
@@ -17,6 +29,14 @@ After you click **Reload**, the plugin stops `hyprmoncfgd.service`, backs up `~/
 The installer links this project to `~/.config/omarchy/plugins/andy.display-reset` and places its icon on the right side of the bar. After changing the dialog code, run `omarchy restart shell` to load the new version.
 
 You can also open the dialog with `omarchy-shell andy.display-reset show`.
+
+## Remove
+
+```bash
+omarchy plugin remove andy.display-reset --yes
+```
+
+This also unlinks a local installation without deleting the checkout.
 
 ## License
 
