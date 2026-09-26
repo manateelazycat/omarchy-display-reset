@@ -6,7 +6,7 @@
 
 Omarchy Shell 插件。任务栏右侧图标打开时，会在所有显示器显示相同的选择对话框。对话框根据 `hyprctl monitors -j` 的当前坐标和旋转排列显示器；在任一屏幕上勾选后，选择会同步到所有对话框。
 
-点击 **Reload** 后，插件停止 `hyprmoncfgd.service`，备份 `~/.config/hypr/hyprmoncfg-monitors.lua`，仅为所选输出临时写入 `disabled = true`，执行 `hyprctl reload`，等待两秒，恢复原配置并再次加载，最后启动服务并检查 `hyprctl configerrors`。执行失败时也会尝试恢复配置和服务。
+点击 **Reload** 后，插件停止 `hyprmoncfgd.service`，备份 `~/.config/hypr/hyprmoncfg-monitors.lua`，仅为所选输出临时写入 `disabled = true`，执行 `hyprctl reload`，等待两秒，恢复原配置并再次加载，最后启动服务并检查 `hyprctl configerrors`。执行失败时也会尝试恢复配置和服务。如果检测到其他进程在此期间修改了显示器配置，插件会保留该修改、报告冲突，并将原配置备份留在运行时目录。
 
 ## 运行要求
 

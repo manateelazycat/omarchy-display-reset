@@ -55,7 +55,13 @@ def command(*args: str) -> str:
     return completed.stdout.strip()
 
 
-def write_atomically(path: Path, contents: bytes, source: Path) -> None:
+def read_regular_file(path: Path) -> bytes:
+    if not path.is_file() or path.is_symlink():
+        raise RuntimeError(f"配置文件已被替换或删除：{path}")
+    return path.read_bytes()
+
+
+def write_atomically(path: Path, contents: bytes, source: Path, expected: bytes) -> None:
     descriptor, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
         with os.fdopen(descriptor, "wb") as stream:
@@ -63,6 +69,8 @@ def write_atomically(path: Path, contents: bytes, source: Path) -> None:
             stream.flush()
             os.fsync(stream.fileno())
         shutil.copystat(source, temporary)
+        if read_regular_file(path) != expected:
+            raise RuntimeError("配置文件已被其他进程修改，未覆盖")
         os.replace(temporary, path)
     finally:
         if os.path.exists(temporary):
@@ -94,38 +102,55 @@ def reload_displays(selected: set[str]) -> str:
     lock_path = runtime / "andy-display-reset.lock"
     with lock_path.open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        command("systemctl", "--user", "stop", "hyprmoncfgd.service")
         backup_path: Path | None = None
-        changed = False
+        original_bytes: bytes | None = None
+        temporary_bytes: bytes | None = None
+        write_attempted = False
+        stop_attempted = False
+        retain_backup = False
         failures: list[str] = []
         try:
-            original = config.read_text(encoding="utf-8")
-            temporary = temporary_configuration(original, selected)
+            stop_attempted = True
+            command("systemctl", "--user", "stop", "hyprmoncfgd.service")
+            original_bytes = read_regular_file(config)
+            temporary = temporary_configuration(original_bytes.decode("utf-8"), selected)
+            temporary_bytes = temporary.encode("utf-8")
             descriptor, backup_name = tempfile.mkstemp(
                 prefix="hyprmoncfg-monitors.pre-modeset.", suffix=".lua", dir=runtime
             )
             os.close(descriptor)
             backup_path = Path(backup_name)
             shutil.copy2(config, backup_path)
-            write_atomically(config, temporary.encode("utf-8"), backup_path)
-            changed = True
+            if backup_path.read_bytes() != original_bytes:
+                raise RuntimeError("备份期间配置文件已被修改，未覆盖")
+            write_attempted = True
+            write_atomically(config, temporary_bytes, backup_path, original_bytes)
             command("hyprctl", "reload")
             time.sleep(2)
         except Exception as error:
             failures.append(str(error))
         finally:
-            if changed and backup_path is not None:
+            if write_attempted and backup_path is not None and original_bytes is not None and temporary_bytes is not None:
                 try:
-                    write_atomically(config, backup_path.read_bytes(), backup_path)
+                    current = read_regular_file(config)
+                    if current == temporary_bytes:
+                        write_atomically(config, original_bytes, backup_path, temporary_bytes)
+                    elif current != original_bytes:
+                        raise RuntimeError("配置文件在重载期间已被修改，未覆盖")
+                except Exception as error:
+                    retain_backup = True
+                    failures.append("恢复配置失败：" + str(error))
+                try:
                     command("hyprctl", "reload")
                 except Exception as error:
-                    failures.append("恢复配置失败：" + str(error))
-            try:
-                command("systemctl", "--user", "start", "hyprmoncfgd.service")
-            except Exception as error:
-                failures.append("启动 hyprmoncfgd 失败：" + str(error))
+                    failures.append("重新加载配置失败：" + str(error))
+            if stop_attempted:
+                try:
+                    command("systemctl", "--user", "start", "hyprmoncfgd.service")
+                except Exception as error:
+                    failures.append("启动 hyprmoncfgd 失败：" + str(error))
             if backup_path is not None:
-                if failures and any(message.startswith("恢复配置失败") for message in failures):
+                if retain_backup:
                     failures.append(f"原配置备份保留在 {backup_path}")
                 else:
                     backup_path.unlink(missing_ok=True)

@@ -69,6 +69,98 @@ class ConfigurationTests(unittest.TestCase):
             self.assertIn(("systemctl", "--user", "start", "hyprmoncfgd.service"), calls)
             self.assertEqual(list(runtime.glob("*.lua")), [])
 
+    def test_interrupt_during_service_stop_still_starts_service(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            config = base / "config" / "hypr" / "hyprmoncfg-monitors.lua"
+            config.parent.mkdir(parents=True)
+            config.write_text(SAMPLE, encoding="utf-8")
+            runtime = base / "runtime"
+            runtime.mkdir()
+            calls = []
+
+            def command(*args):
+                calls.append(args)
+                if args == ("hyprctl", "monitors", "-j"):
+                    return json.dumps([{"name": "HDMI-A-2", "disabled": False}])
+                if args == ("systemctl", "--user", "stop", "hyprmoncfgd.service"):
+                    raise InterruptedError("模拟停止服务时中断")
+                return ""
+
+            environment = {"XDG_CONFIG_HOME": str(base / "config"), "XDG_RUNTIME_DIR": str(runtime)}
+            with patch.dict(os.environ, environment), patch.object(target, "command", side_effect=command):
+                with self.assertRaisesRegex(RuntimeError, "模拟停止服务时中断"):
+                    target.reload_displays({"HDMI-A-2"})
+
+            self.assertEqual(config.read_text(), SAMPLE)
+            self.assertIn(("systemctl", "--user", "start", "hyprmoncfgd.service"), calls)
+
+    def test_concurrent_config_change_is_preserved_and_backup_is_retained(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            config = base / "config" / "hypr" / "hyprmoncfg-monitors.lua"
+            config.parent.mkdir(parents=True)
+            config.write_text(SAMPLE, encoding="utf-8")
+            runtime = base / "runtime"
+            runtime.mkdir()
+            calls = []
+            external_change = SAMPLE + "-- edited while reloading\n"
+
+            def command(*args):
+                calls.append(args)
+                if args == ("hyprctl", "monitors", "-j"):
+                    return json.dumps([{"name": "HDMI-A-2", "disabled": False}])
+                return ""
+
+            environment = {"XDG_CONFIG_HOME": str(base / "config"), "XDG_RUNTIME_DIR": str(runtime)}
+            with patch.dict(os.environ, environment), patch.object(target, "command", side_effect=command), \
+                 patch.object(target.time, "sleep", side_effect=lambda _: config.write_text(external_change)):
+                with self.assertRaisesRegex(RuntimeError, "配置文件在重载期间已被修改，未覆盖"):
+                    target.reload_displays({"HDMI-A-2"})
+
+            self.assertEqual(config.read_text(), external_change)
+            backups = list(runtime.glob("*.lua"))
+            self.assertEqual(len(backups), 1)
+            self.assertEqual(backups[0].read_text(), SAMPLE)
+            self.assertEqual(calls.count(("hyprctl", "reload")), 2)
+            self.assertIn(("systemctl", "--user", "start", "hyprmoncfgd.service"), calls)
+
+    def test_interrupt_after_temporary_replace_restores_config(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            config = base / "config" / "hypr" / "hyprmoncfg-monitors.lua"
+            config.parent.mkdir(parents=True)
+            config.write_text(SAMPLE, encoding="utf-8")
+            runtime = base / "runtime"
+            runtime.mkdir()
+            calls = []
+            original_write = target.write_atomically
+            writes = 0
+
+            def command(*args):
+                calls.append(args)
+                if args == ("hyprctl", "monitors", "-j"):
+                    return json.dumps([{"name": "HDMI-A-2", "disabled": False}])
+                return ""
+
+            def write_then_interrupt(*args):
+                nonlocal writes
+                writes += 1
+                original_write(*args)
+                if writes == 1:
+                    raise InterruptedError("模拟写入后中断")
+
+            environment = {"XDG_CONFIG_HOME": str(base / "config"), "XDG_RUNTIME_DIR": str(runtime)}
+            with patch.dict(os.environ, environment), patch.object(target, "command", side_effect=command), \
+                 patch.object(target, "write_atomically", side_effect=write_then_interrupt):
+                with self.assertRaisesRegex(RuntimeError, "模拟写入后中断"):
+                    target.reload_displays({"HDMI-A-2"})
+
+            self.assertEqual(config.read_text(), SAMPLE)
+            self.assertEqual(writes, 2)
+            self.assertEqual(list(runtime.glob("*.lua")), [])
+            self.assertIn(("systemctl", "--user", "start", "hyprmoncfgd.service"), calls)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,7 +6,7 @@ English | [简体中文](README.zh-CN.md)
 
 This Omarchy Shell plugin adds an icon to the right side of the bar. Clicking it opens the same dialog on every monitor. The dialog arranges monitors using their current coordinates and rotation from `hyprctl monitors -j`. Selecting a monitor in any dialog updates the selection in all of them.
 
-After you click **Reload**, the plugin stops `hyprmoncfgd.service`, backs up `~/.config/hypr/hyprmoncfg-monitors.lua`, and temporarily adds `disabled = true` only to the selected outputs. It runs `hyprctl reload`, waits two seconds, restores the original configuration, reloads again, starts the service, and checks `hyprctl configerrors`. It also attempts to restore the configuration and service if an operation fails.
+After you click **Reload**, the plugin stops `hyprmoncfgd.service`, backs up `~/.config/hypr/hyprmoncfg-monitors.lua`, and temporarily adds `disabled = true` only to the selected outputs. It runs `hyprctl reload`, waits two seconds, restores the original configuration, reloads again, starts the service, and checks `hyprctl configerrors`. It also attempts to restore the configuration and service if an operation fails. If it detects another process changing the monitor file during the reload, the plugin leaves that change in place, reports the conflict, and keeps the original backup in the runtime directory.
 
 ## Requirements
 
