@@ -1,21 +1,23 @@
 # Display Reset
 
-![Display Reset 四屏预览](preview.png)
+English | [简体中文](README.zh-CN.md)
 
-Omarchy Shell 插件。任务栏右侧图标打开时，会在所有显示器显示相同的选择对话框。对话框根据 `hyprctl monitors -j` 的当前坐标和旋转排列显示器；在任一屏幕上勾选后，选择会同步到所有对话框。
+![Display Reset on four monitors](preview.png)
 
-点击 **Reload** 后，插件停止 `hyprmoncfgd.service`，备份 `~/.config/hypr/hyprmoncfg-monitors.lua`，仅为所选输出临时写入 `disabled = true`，执行 `hyprctl reload`，等待两秒，恢复原配置并再次加载，最后启动服务并检查 `hyprctl configerrors`。执行失败时也会尝试恢复配置和服务。
+This Omarchy Shell plugin adds an icon to the right side of the bar. Clicking it opens the same dialog on every monitor. The dialog arranges monitors using their current coordinates and rotation from `hyprctl monitors -j`. Selecting a monitor in any dialog updates the selection in all of them.
 
-安装：
+After you click **Reload**, the plugin stops `hyprmoncfgd.service`, backs up `~/.config/hypr/hyprmoncfg-monitors.lua`, and temporarily adds `disabled = true` only to the selected outputs. It runs `hyprctl reload`, waits two seconds, restores the original configuration, reloads again, starts the service, and checks `hyprctl configerrors`. It also attempts to restore the configuration and service if an operation fails.
+
+## Install
 
 ```bash
 ./install.sh
 ```
 
-安装脚本将项目目录链接到 `~/.config/omarchy/plugins/andy.display-reset`，并将图标放在任务栏右侧。修改弹窗代码后，运行 `omarchy restart shell` 加载新版界面。
+The installer links this project to `~/.config/omarchy/plugins/andy.display-reset` and places its icon on the right side of the bar. After changing the dialog code, run `omarchy restart shell` to load the new version.
 
-也可以运行 `omarchy-shell andy.display-reset show` 打开对话框。
+You can also open the dialog with `omarchy-shell andy.display-reset show`.
 
-## 协议
+## License
 
-本项目采用 GNU General Public License version 3.0 only（`GPL-3.0-only`），详见 [LICENSE](LICENSE)。
+This project is licensed under the GNU General Public License version 3.0 only (`GPL-3.0-only`). See [LICENSE](LICENSE).
