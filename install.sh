@@ -32,7 +32,31 @@ if [[ "$discovered" != true ]]; then
 fi
 shell_config="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/shell.json"
 if [[ -f "$shell_config" ]]; then
-  cp -p -- "$shell_config" "$shell_config.bak.display-reset.$(date +%Y%m%d%H%M%S)"
+  python3 - "$shell_config" <<'PY'
+import os
+from pathlib import Path
+import shutil
+import stat
+import sys
+import tempfile
+
+source_path = Path(sys.argv[1])
+with source_path.open("rb") as source:
+    source_stat = os.fstat(source.fileno())
+    descriptor, backup_name = tempfile.mkstemp(
+        prefix=f"{source_path.name}.bak.display-reset.", dir=source_path.parent
+    )
+    try:
+        with os.fdopen(descriptor, "wb") as backup:
+            shutil.copyfileobj(source, backup)
+            backup.flush()
+            os.fchmod(backup.fileno(), stat.S_IMODE(source_stat.st_mode))
+            os.utime(backup.fileno(), ns=(source_stat.st_atime_ns, source_stat.st_mtime_ns))
+            os.fsync(backup.fileno())
+    except BaseException:
+        os.unlink(backup_name)
+        raise
+PY
 fi
 omarchy plugin enable andy.display-reset
 omarchy bar move andy.display-reset --section right

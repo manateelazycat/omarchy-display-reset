@@ -10,7 +10,7 @@ Omarchy Shell 插件。任务栏右侧图标打开时，会在所有显示器显
 
 ## 运行要求
 
-需要 Omarchy Shell 和 Hyprland。重启显示器还需要 Python 3、`hyprctl`、`systemctl --user`、运行中的 `hyprmoncfgd.service`，以及生成的 `~/.config/hypr/hyprmoncfg-monitors.lua` 文件。本地安装脚本还使用 `jq`。
+需要 Omarchy Shell 和 Hyprland。重启显示器还需要 Python 3、`hyprctl`、`systemctl --user`、运行中的 `hyprmoncfgd.service`，以及生成的 `~/.config/hypr/hyprmoncfg-monitors.lua` 文件。本地安装脚本还使用 Python 3 和 `jq`。
 
 ## 安装
 

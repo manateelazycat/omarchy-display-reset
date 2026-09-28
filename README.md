@@ -10,7 +10,7 @@ After you click **Reload**, the plugin stops `hyprmoncfgd.service`, backs up `~/
 
 ## Requirements
 
-Omarchy Shell and Hyprland are required. The reload action also needs Python 3, `hyprctl`, `systemctl --user`, a running `hyprmoncfgd.service`, and the generated `~/.config/hypr/hyprmoncfg-monitors.lua` file. The local installer additionally uses `jq`.
+Omarchy Shell and Hyprland are required. The reload action also needs Python 3, `hyprctl`, `systemctl --user`, a running `hyprmoncfgd.service`, and the generated `~/.config/hypr/hyprmoncfg-monitors.lua` file. The local installer additionally uses Python 3 and `jq`.
 
 ## Install
 

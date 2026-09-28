@@ -35,6 +35,65 @@ class ConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "找不到输出"):
             target.temporary_configuration(SAMPLE, {"DP-9"})
 
+    def test_symlink_lock_does_not_truncate_its_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            config = base / "config" / "hypr" / "hyprmoncfg-monitors.lua"
+            config.parent.mkdir(parents=True)
+            config.write_text(SAMPLE, encoding="utf-8")
+            runtime = base / "runtime"
+            runtime.mkdir()
+            victim = base / "victim"
+            victim.write_text("keep me", encoding="utf-8")
+            (runtime / "andy-display-reset.lock").symlink_to(victim)
+            calls = []
+
+            def command(*args):
+                calls.append(args)
+                if args == ("hyprctl", "monitors", "-j"):
+                    return json.dumps([{"name": "HDMI-A-2", "disabled": False}])
+                return ""
+
+            environment = {"XDG_CONFIG_HOME": str(base / "config"), "XDG_RUNTIME_DIR": str(runtime)}
+            with patch.dict(os.environ, environment), patch.object(target, "command", side_effect=command):
+                with self.assertRaises(OSError):
+                    target.reload_displays({"HDMI-A-2"})
+
+            self.assertEqual(victim.read_text(encoding="utf-8"), "keep me")
+            self.assertEqual(config.read_text(encoding="utf-8"), SAMPLE)
+            self.assertNotIn(("systemctl", "--user", "stop", "hyprmoncfgd.service"), calls)
+
+    def test_existing_regular_lock_is_not_truncated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            config = base / "config" / "hypr" / "hyprmoncfg-monitors.lua"
+            config.parent.mkdir(parents=True)
+            config.write_text(SAMPLE, encoding="utf-8")
+            runtime = base / "runtime"
+            runtime.mkdir()
+            lock = runtime / "andy-display-reset.lock"
+            lock.write_text("existing lock contents", encoding="utf-8")
+
+            def command(*args):
+                if args == ("hyprctl", "monitors", "-j"):
+                    return json.dumps([{"name": "HDMI-A-2", "disabled": False}])
+                return ""
+
+            environment = {"XDG_CONFIG_HOME": str(base / "config"), "XDG_RUNTIME_DIR": str(runtime)}
+            with patch.dict(os.environ, environment), patch.object(target, "command", side_effect=command), \
+                 patch.object(target.time, "sleep"):
+                self.assertIn("HDMI-A-2", target.reload_displays({"HDMI-A-2"}))
+
+            self.assertEqual(lock.read_text(encoding="utf-8"), "existing lock contents")
+            self.assertEqual(config.read_text(encoding="utf-8"), SAMPLE)
+
+    def test_nonregular_lock_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            lock = Path(directory) / "andy-display-reset.lock"
+            os.mkfifo(lock)
+            with self.assertRaisesRegex(RuntimeError, "锁文件不是当前用户拥有的常规文件"):
+                target.open_regular_lockfile(lock)
+
     def test_failure_during_first_reload_restores_config_and_service(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)

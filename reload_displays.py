@@ -8,10 +8,12 @@ from pathlib import Path
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
 import time
+from typing import TextIO
 
 
 OUTPUT_NAME = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -81,6 +83,21 @@ def interrupted(_signum: int, _frame: object) -> None:
     raise InterruptedError("操作被中断")
 
 
+def open_regular_lockfile(path: Path) -> TextIO:
+    """Open an owned regular lock file without following links or truncating it."""
+    descriptor = os.open(
+        path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, 0o600
+    )
+    try:
+        details = os.fstat(descriptor)
+        if not stat.S_ISREG(details.st_mode) or details.st_uid != os.getuid() or details.st_nlink != 1:
+            raise RuntimeError(f"锁文件不是当前用户拥有的常规文件：{path}")
+        return os.fdopen(descriptor, "r+")
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
 def reload_displays(selected: set[str]) -> str:
     if not selected or any(not OUTPUT_NAME.fullmatch(name) for name in selected):
         raise ValueError("请选择有效的显示器输出")
@@ -100,7 +117,7 @@ def reload_displays(selected: set[str]) -> str:
         raise ValueError("显示器已断开：" + ", ".join(sorted(absent)))
 
     lock_path = runtime / "andy-display-reset.lock"
-    with lock_path.open("w") as lock:
+    with open_regular_lockfile(lock_path) as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         backup_path: Path | None = None
         original_bytes: bytes | None = None
