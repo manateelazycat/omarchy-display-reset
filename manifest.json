@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "andy.display-reset",
   "name": "Display Reset",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Andy",
   "license": "GPL-3.0-only",
   "description": "Select connected displays and temporarily disable and restore them through the hyprmoncfg monitor configuration.",
