@@ -1,6 +1,7 @@
+import "CompatUi" as ThemeUi
 import QtQuick
 import QtQuick.Effects
-import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 
 BarWidget {
@@ -12,7 +13,7 @@ BarWidget {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
-  BarIconButton {
+  ThemeUi.BarIconButton {
     id: button
     anchors.fill: parent
     bar: root.bar

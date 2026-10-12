@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import qs.Commons
+import qs.Commons as Commons
 import "Layout.js" as DisplayLayout
 
 Item {
@@ -147,23 +147,25 @@ Item {
 
         Rectangle {
           id: card
+          objectName: "displayResetCard"
           width: 680
           height: 516
           anchors.centerIn: parent
           scale: Math.min(1, (parent.width - 28) / width, (parent.height - 28) / height)
           radius: 0
-          color: Color.background
-          border.color: Color.accent
+          color: Commons.Color.background
+          border.color: Commons.Color.accent
           border.width: 1
 
           MouseArea { anchors.fill: parent; onClicked: {} }
 
           Text {
             x: 28; y: 24
+            objectName: "displayResetHeading"
             text: "重新加载显示器"
             textFormat: Text.PlainText
-            color: Color.foreground
-            font.family: Style.font.family
+            color: Commons.Color.foreground
+            font.family: Commons.Style.font.family
             font.pixelSize: 23
             font.bold: true
           }
@@ -173,9 +175,9 @@ Item {
             width: 624
             text: "多显示时遇到显示器意外镜像时，可通过重启显示器来恢复信号"
             textFormat: Text.PlainText
-            color: Color.foreground
+            color: Commons.Color.foreground
             opacity: 0.7
-            font.family: Style.font.family
+            font.family: Commons.Style.font.family
             font.pixelSize: 14
           }
 
@@ -190,15 +192,16 @@ Item {
               anchors.centerIn: parent
               visible: root.displays.length === 0
               text: "正在读取显示器…"
-              color: Color.foreground
+              color: Commons.Color.foreground
               opacity: 0.65
-              font.family: Style.font.family
+              font.family: Commons.Style.font.family
               font.pixelSize: 15
             }
 
             Repeater {
               model: root.displays
               delegate: Rectangle {
+                objectName: "displayResetMonitor"
                 required property var modelData
                 readonly property var geometry: DisplayLayout.rect(modelData, root.layoutBounds,
                                                                    canvas.width, canvas.height, 18)
@@ -208,9 +211,9 @@ Item {
                 width: geometry.width
                 height: geometry.height
                 radius: 0
-                color: checked ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.3)
+                color: checked ? Qt.rgba(Commons.Color.accent.r, Commons.Color.accent.g, Commons.Color.accent.b, 0.3)
                                : Qt.rgba(0.5, 0.5, 0.5, 0.15)
-                border.color: checked ? Color.accent : Color.foreground
+                border.color: checked ? Commons.Color.accent : Commons.Color.foreground
                 border.width: checked ? 2 : 1
 
                 Text {
@@ -223,8 +226,8 @@ Item {
                   elide: Text.ElideRight
                   maximumLineCount: 2
                   wrapMode: Text.Wrap
-                  color: Color.foreground
-                  font.family: Style.font.family
+                  color: Commons.Color.foreground
+                  font.family: Commons.Style.font.family
                   font.pixelSize: 14
                   font.bold: true
                 }
@@ -235,13 +238,13 @@ Item {
                   anchors.margins: 8
                   width: 20; height: 20
                   radius: 0
-                  color: checked ? Color.accent : "transparent"
-                  border.color: checked ? Color.accent : Color.foreground
+                  color: checked ? Commons.Color.accent : "transparent"
+                  border.color: checked ? Commons.Color.accent : Commons.Color.foreground
                   Text {
                     anchors.centerIn: parent
                     visible: checked
                     text: "✓"
-                    color: Color.background
+                    color: Commons.Color.background
                     font.pixelSize: 15
                     font.bold: true
                   }
@@ -263,8 +266,8 @@ Item {
             visible: root.statusMessage !== ""
             text: root.statusMessage
             textFormat: Text.PlainText
-            color: root.statusError ? Color.urgent : Color.foreground
-            font.family: Style.font.family
+            color: root.statusError ? Commons.Color.urgent : Commons.Color.foreground
+            font.family: Commons.Style.font.family
             font.pixelSize: 14
             wrapMode: Text.Wrap
             verticalAlignment: Text.AlignVCenter
@@ -273,12 +276,12 @@ Item {
           Rectangle {
             x: 562; y: 440; width: 90; height: 36
             radius: 0
-            color: root.selected.length > 0 && !root.busy ? Color.accent : Qt.rgba(0.5, 0.5, 0.5, 0.2)
+            color: root.selected.length > 0 && !root.busy ? Commons.Color.accent : Qt.rgba(0.5, 0.5, 0.5, 0.2)
             Text {
               anchors.centerIn: parent
               text: root.busy ? "处理中…" : "Reload"
-              color: root.selected.length > 0 && !root.busy ? Color.background : Color.foreground
-              font.family: Style.font.family
+              color: root.selected.length > 0 && !root.busy ? Commons.Color.background : Commons.Color.foreground
+              font.family: Commons.Style.font.family
               font.pixelSize: 14
               font.bold: true
             }
